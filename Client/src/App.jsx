@@ -5,20 +5,21 @@ import heroImg from './assets/hero.png'
 import piggy from './assets/piggy.jpeg'
 import { useEffect } from 'react'
 import Loading from './Loading/loading'
+import { Navbar } from './global/navbar'
 
 function App() {
   
-const [loading ,setloading] = useState(true);
+const [loading ,setloading] = useState(false);
 
-useEffect(()=>{
+// useEffect(()=>{
 
-setTimeout(()=>{
-  setloading(false);
-},5000)
+// setTimeout(()=>{
+//   setloading(false);
+// },5000)
 
 
 
-},[])
+// },[])
 
 
 return(
@@ -29,12 +30,9 @@ return(
 loading===true && <Loading/>
 
  }
-{
-  loading===false &&
-<div className=''>
-  data ahead
-</div>
-}
+
+ <Navbar/>
+
 </>
 
 
