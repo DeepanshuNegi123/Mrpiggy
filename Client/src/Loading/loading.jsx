@@ -13,7 +13,8 @@ return (
 className="h-100 w-98 border rounded-full " alt="loading">
 </img>
 
-<h2 className="text-6xl font-bold text-gray-200 animate-pulse"> Loading... </h2>
+
+<h2 className="text-6xl font-bold text-[rgb(108,77,69)] animate-pulse">Loading... </h2>
 
 </div>
 

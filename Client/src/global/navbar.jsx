@@ -1,9 +1,66 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
+
+// Define per-route behavior here. Add a new key for every route path you care about.
+// "scrollMode":
+//   "sticky"  -> stays pinned at top always (current dashboard behavior)
+//   "hide"    -> hides on scroll down, reappears on scroll up
+//   "normal"  -> scrolls away with the page, no special positioning
+const ROUTE_CONFIG = {
+  "/": {
+    scrollMode: "sticky",
+    bg: "bg-[rgb(18,19,21)]/90",
+    border: "border-[#c5a059]/25",
+  },
+  "/about": {
+    scrollMode: "normal",
+    bg:"bg-[rgb(73,41,34)]",
+    border: "border-transparent",
+  },
+  "/dashboard": {
+    scrollMode: "sticky",
+    bg: "bg-[rgb(18,19,21)]/90",
+    border: "border-[#c5a059]/25",
+  },
+};
+
+const DEFAULT_CONFIG = {
+  scrollMode: "sticky",
+  bg: "bg-[rgb(18,19,21)]/90",
+  border: "border-[#c5a059]/25",
+};
 
 export const Navbar = () => {
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // --- route-aware behavior ---
+  const location = useLocation();
+  const config = ROUTE_CONFIG[location.pathname] || DEFAULT_CONFIG;
+
+  // --- hide-on-scroll-down state (only used when scrollMode === "hide") ---
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    if (config.scrollMode !== "hide") {
+      setHidden(false);
+      return;
+    }
+
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const scrollingDown = currentY > lastScrollY.current;
+      const pastThreshold = currentY > 80; // don't hide right at the top
+
+      setHidden(scrollingDown && pastThreshold);
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [config.scrollMode]);
 
   const menuItems = [
     {
@@ -64,32 +121,48 @@ export const Navbar = () => {
 
   const activeItem = menuItems.find(item => item.name === activeTab) || menuItems[0];
 
+  // --- positioning classes derived from scrollMode ---
+  const positionClass =
+    config.scrollMode === "sticky"
+      ? "sticky top-0"
+      : config.scrollMode === "hide"
+      ? "fixed top-0 left-0 right-0"
+      : "relative"; // "normal" — scrolls away with the page
+
+  const hideTransformClass =
+    config.scrollMode === "hide"
+      ? hidden
+        ? "-translate-y-full"
+        : "translate-y-0"
+      : "";
+
   return (
-    <nav className="sticky top-0 z-50 h-20 bg-[rgb(18,19,21)]/90 backdrop-blur-md border-b border-yellow-600/15 px-6 md:px-12 flex items-center justify-between transition-all duration-300">
+    <nav
+      className={`${positionClass} ${hideTransformClass} z-50 h-20 ${config.bg} backdrop-blur-md border-b ${config.border} px-6 md:px-12 flex items-center justify-between transition-all duration-300`}
+    >
       {/* Left: Logo & Brand */}
       <div className="flex items-center gap-3 cursor-pointer group">
         <div className="relative">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-full blur opacity-30 group-hover:opacity-75 transition duration-500"></div>
+          <div className="absolute -inset-1 rounded-full blur-md bg-[#e5c158]/40 opacity-40 group-hover:opacity-100 transition duration-500"></div>
           <img
-            src="serious.png"
+            src="/serious.png"
             alt="MrPiggy"
-            className="relative h-11 w-11 rounded-full object-cover border border-yellow-500/20 transform group-hover:scale-105 transition duration-300"
+            className="relative h-11 w-11 rounded-full object-cover border border-[#e5c158]/40 transform group-hover:scale-105 transition duration-300 shadow-lg"
           />
         </div>
-        <span className="hidden sm:block text-xl font-bold tracking-tight text-white group-hover:text-yellow-500 transition duration-300">
-          Mr. <span className="text-yellow-500 group-hover:text-white transition duration-300">Piggy</span>
+        <span className="hidden sm:block text-xl font-bold tracking-tight text-white group-hover:text-[#e5c158] transition duration-300">
+          Mr. <span className="text-[#e5c158] drop-shadow-[0_0_10px_rgba(229,193,88,0.5)] group-hover:text-white transition duration-300">Piggy</span>
         </span>
       </div>
 
       {/* Right: Custom Dropdown Menu (All Screens) */}
       <div className="relative" ref={dropdownRef}>
-        {/* Dropdown Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2.5 bg-[rgb(28,30,34)] border border-yellow-600/20 px-4 py-2.5 rounded-xl text-yellow-500 font-semibold text-sm hover:bg-[rgb(34,36,41)] transition-all duration-300 cursor-pointer shadow-lg shadow-black/20 hover:border-yellow-500/40"
+          className="flex items-center gap-2.5 bg-[rgb(28,30,34)] border border-[#c5a059]/30 px-4 py-2.5 rounded-xl text-[#e5c158] font-semibold text-sm hover:bg-[rgb(34,36,41)] transition-all duration-300 cursor-pointer shadow-lg shadow-black/40 hover:border-[#e5c158] hover:shadow-[#e5c158]/15 hover:shadow-md"
         >
-          <span className="opacity-90">{activeItem.icon}</span>
-          <span>{activeItem.name}</span>
+          <span className="opacity-90 drop-shadow-[0_0_8px_rgba(229,193,88,0.3)]">{activeItem.icon}</span>
+          <span className="drop-shadow-[0_0_8px_rgba(229,193,88,0.3)]">{activeItem.name}</span>
           <svg
             className={`w-4 h-4 ml-1 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
             fill="none"
@@ -101,10 +174,9 @@ export const Navbar = () => {
           </svg>
         </button>
 
-        {/* Custom Dropdown List */}
         {isOpen && (
-          <div className="absolute right-0 mt-2.5 w-56 bg-[rgb(25,27,30)] border border-yellow-600/20 rounded-2xl shadow-2xl shadow-black/80 py-2 overflow-hidden z-50 animate-in fade-in slide-in-from-top-3 duration-200">
-            <div className="px-3 py-1.5 text-[11px] font-bold tracking-wider text-yellow-600/60 uppercase">
+          <div className="absolute right-0 mt-2.5 w-56 bg-[rgb(25,27,30)] border border-[#c5a059]/35 rounded-2xl shadow-2xl shadow-black/90 py-2 overflow-hidden z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="px-3 py-1.5 text-[11px] font-bold tracking-wider text-[#c5a059]/70 uppercase drop-shadow-[0_0_6px_rgba(197,160,89,0.2)]">
               Navigation
             </div>
             {menuItems.map((item) => {
@@ -120,12 +192,12 @@ export const Navbar = () => {
                     w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 text-left cursor-pointer
                     ${
                       isActive
-                        ? "text-yellow-500 bg-gradient-to-r from-yellow-500/10 to-transparent border-l-2 border-yellow-500"
-                        : "text-gray-300 hover:text-white hover:bg-yellow-500/5 hover:translate-x-0.5"
+                        ? "text-[#e5c158] bg-gradient-to-r from-[#e5c158]/15 to-transparent border-l-2 border-[#e5c158] drop-shadow-[0_0_8px_rgba(229,193,88,0.4)]"
+                        : "text-gray-300 hover:text-white hover:bg-[#e5c158]/5 hover:translate-x-0.5"
                     }
                   `}
                 >
-                  <span className={isActive ? "text-yellow-500" : "text-gray-400"}>
+                  <span className={isActive ? "text-[#e5c158]" : "text-gray-400"}>
                     {item.icon}
                   </span>
                   <span>{item.name}</span>
